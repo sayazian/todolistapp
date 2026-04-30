@@ -3,14 +3,14 @@
 ## Summary
 
 This app will use a React + TypeScript frontend and a lightweight backend with
-a relational database. The first version should prioritize clear data flow and
-low setup overhead over maximum flexibility.
+SQLite as the relational database for v1. The first version should prioritize
+clear data flow and low setup overhead over maximum flexibility.
 
 ## Proposed Stack
 
 - Frontend: React, TypeScript, Vite
 - Backend: Node.js with a minimal TypeScript API layer
-- Database: PostgreSQL or a hosted Postgres-compatible service
+- Database: SQLite
 - Deployment: Frontend and backend deployed separately if needed
 
 This stack is intentionally mainstream enough to be portfolio-relevant while

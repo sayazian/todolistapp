@@ -1,2 +1,9 @@
 .DS_Store
 .idea/
+node_modules/
+client/dist/
+client/*.tsbuildinfo
+client/vite.config.d.ts
+client/vite.config.js
+server/dist/
+server/data/
