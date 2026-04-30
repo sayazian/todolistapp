@@ -60,6 +60,10 @@ button {
   margin-top: 24px;
 }
 
+.compact-stack {
+  margin-top: 0;
+}
+
 .field {
   display: grid;
   gap: 6px;
@@ -107,11 +111,13 @@ button {
   color: inherit;
   font-weight: 600;
   padding: 0;
+  text-align: left;
 }
 
 .list-actions,
 .filter-row,
-.todo-actions {
+.todo-actions,
+.inline-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -132,6 +138,7 @@ button {
 .filter-row button,
 .list-actions button,
 .todo-actions button,
+.inline-actions button,
 .stack button,
 .todo-form button {
   border: 0;
@@ -139,6 +146,10 @@ button {
   padding: 10px 14px;
   background: #d7e7e4;
   color: #17393d;
+}
+
+.ghost-button {
+  background: #eff3f2;
 }
 
 .filter-row .active-filter {
@@ -196,6 +207,12 @@ button {
   display: grid;
   gap: 4px;
   color: #4d6265;
+}
+
+.edit-form {
+  display: grid;
+  gap: 12px;
+  width: 100%;
 }
 
 .empty-message,

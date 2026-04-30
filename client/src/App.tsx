@@ -26,6 +26,13 @@ type TodoDraft = {
   notes: string;
 };
 
+type TodoEditState = {
+  id: number;
+  title: string;
+  dueDate: string;
+  notes: string;
+};
+
 const emptyDraft: TodoDraft = {
   title: "",
   dueDate: "",
@@ -57,6 +64,9 @@ export default function App() {
   const [filter, setFilter] = useState<TodoFilter>("all");
   const [newListName, setNewListName] = useState("");
   const [draft, setDraft] = useState<TodoDraft>(emptyDraft);
+  const [editingListId, setEditingListId] = useState<number | null>(null);
+  const [editingListName, setEditingListName] = useState("");
+  const [editingTodo, setEditingTodo] = useState<TodoEditState | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingTodo, setSavingTodo] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -133,16 +143,17 @@ export default function App() {
     }
   }
 
-  async function handleRenameList(listId: number) {
-    const current = lists.find((list) => list.id === listId);
+  function startEditingList(list: TodoList) {
+    setEditingListId(list.id);
+    setEditingListName(list.name);
+  }
 
-    if (!current) {
-      return;
-    }
+  async function handleRenameList(event: FormEvent<HTMLFormElement>, listId: number) {
+    event.preventDefault();
 
-    const nextName = window.prompt("Rename list", current.name)?.trim();
+    const nextName = editingListName.trim();
 
-    if (!nextName || nextName === current.name) {
+    if (!nextName) {
       return;
     }
 
@@ -154,6 +165,8 @@ export default function App() {
       setLists((existing) =>
         existing.map((list) => (list.id === listId ? updated : list))
       );
+      setEditingListId(null);
+      setEditingListName("");
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(getMessage(error));
@@ -177,6 +190,8 @@ export default function App() {
       const remainingLists = lists.filter((list) => list.id !== listId);
       setLists(remainingLists);
       setSelectedListId(remainingLists[0]?.id ?? null);
+      setEditingListId(null);
+      setEditingListName("");
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(getMessage(error));
@@ -232,34 +247,44 @@ export default function App() {
         method: "DELETE"
       });
       setTodos((current) => current.filter((todo) => todo.id !== todoId));
+      if (editingTodo?.id === todoId) {
+        setEditingTodo(null);
+      }
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(getMessage(error));
     }
   }
 
-  async function handleEditTodo(todo: Todo) {
-    const title = window.prompt("Edit title", todo.title)?.trim();
+  function startEditingTodo(todo: Todo) {
+    setEditingTodo({
+      id: todo.id,
+      title: todo.title,
+      dueDate: todo.dueDate ?? "",
+      notes: todo.notes ?? ""
+    });
+  }
 
-    if (!title) {
+  async function handleSaveTodoEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!editingTodo || !editingTodo.title.trim()) {
       return;
     }
 
-    const dueDate = window.prompt("Edit due date (YYYY-MM-DD)", todo.dueDate ?? "");
-    const notes = window.prompt("Edit notes", todo.notes ?? "");
-
     try {
-      const updated = await request<Todo>(`/api/todos/${todo.id}`, {
+      const updated = await request<Todo>(`/api/todos/${editingTodo.id}`, {
         method: "PATCH",
         body: JSON.stringify({
-          title,
-          dueDate: dueDate?.trim() ? dueDate.trim() : null,
-          notes: notes?.trim() ? notes.trim() : null
+          title: editingTodo.title.trim(),
+          dueDate: editingTodo.dueDate.trim() || null,
+          notes: editingTodo.notes.trim() || null
         })
       });
       setTodos((current) =>
-        current.map((item) => (item.id === todo.id ? updated : item))
+        current.map((item) => (item.id === updated.id ? updated : item))
       );
+      setEditingTodo(null);
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(getMessage(error));
@@ -295,21 +320,52 @@ export default function App() {
               key={list.id}
               className={`list-card ${selectedListId === list.id ? "selected" : ""}`}
             >
-              <button
-                type="button"
-                className="list-select"
-                onClick={() => setSelectedListId(list.id)}
-              >
-                {list.name}
-              </button>
-              <div className="list-actions">
-                <button type="button" onClick={() => handleRenameList(list.id)}>
-                  Rename
-                </button>
-                <button type="button" onClick={() => handleDeleteList(list.id)}>
-                  Delete
-                </button>
-              </div>
+              {editingListId === list.id ? (
+                <form
+                  className="stack compact-stack"
+                  onSubmit={(event) => void handleRenameList(event, list.id)}
+                >
+                  <label className="field">
+                    <span>List name</span>
+                    <input
+                      value={editingListName}
+                      onChange={(event) => setEditingListName(event.target.value)}
+                      autoFocus
+                    />
+                  </label>
+                  <div className="inline-actions">
+                    <button type="submit">Save</button>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => {
+                        setEditingListId(null);
+                        setEditingListName("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="list-select"
+                    onClick={() => setSelectedListId(list.id)}
+                  >
+                    {list.name}
+                  </button>
+                  <div className="list-actions">
+                    <button type="button" onClick={() => startEditingList(list)}>
+                      Rename
+                    </button>
+                    <button type="button" onClick={() => handleDeleteList(list.id)}>
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ))}
 
@@ -389,30 +445,83 @@ export default function App() {
         <section className="todo-list">
           {visibleTodos.map((todo) => (
             <article key={todo.id} className="todo-card">
-              <div className="todo-main">
-                <label className="todo-title-row">
-                  <input
-                    type="checkbox"
-                    checked={todo.completed}
-                    onChange={() => handleToggleTodo(todo)}
-                  />
-                  <span className={todo.completed ? "todo-title done" : "todo-title"}>
-                    {todo.title}
-                  </span>
-                </label>
-                <div className="todo-meta">
-                  <span>{todo.dueDate ? `Due ${todo.dueDate}` : "No due date"}</span>
-                  <span>{todo.notes ? todo.notes : "No notes"}</span>
-                </div>
-              </div>
-              <div className="todo-actions">
-                <button type="button" onClick={() => handleEditTodo(todo)}>
-                  Edit
-                </button>
-                <button type="button" onClick={() => handleDeleteTodo(todo.id)}>
-                  Delete
-                </button>
-              </div>
+              {editingTodo?.id === todo.id ? (
+                <form className="edit-form" onSubmit={handleSaveTodoEdit}>
+                  <label className="field field-wide">
+                    <span>Title</span>
+                    <input
+                      value={editingTodo.title}
+                      onChange={(event) =>
+                        setEditingTodo((current) =>
+                          current ? { ...current, title: event.target.value } : current
+                        )
+                      }
+                      autoFocus
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Due date</span>
+                    <input
+                      type="date"
+                      value={editingTodo.dueDate}
+                      onChange={(event) =>
+                        setEditingTodo((current) =>
+                          current ? { ...current, dueDate: event.target.value } : current
+                        )
+                      }
+                    />
+                  </label>
+                  <label className="field field-wide">
+                    <span>Notes</span>
+                    <textarea
+                      rows={3}
+                      value={editingTodo.notes}
+                      onChange={(event) =>
+                        setEditingTodo((current) =>
+                          current ? { ...current, notes: event.target.value } : current
+                        )
+                      }
+                    />
+                  </label>
+                  <div className="inline-actions">
+                    <button type="submit">Save changes</button>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => setEditingTodo(null)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <div className="todo-main">
+                    <label className="todo-title-row">
+                      <input
+                        type="checkbox"
+                        checked={todo.completed}
+                        onChange={() => handleToggleTodo(todo)}
+                      />
+                      <span className={todo.completed ? "todo-title done" : "todo-title"}>
+                        {todo.title}
+                      </span>
+                    </label>
+                    <div className="todo-meta">
+                      <span>{todo.dueDate ? `Due ${todo.dueDate}` : "No due date"}</span>
+                      <span>{todo.notes ? todo.notes : "No notes"}</span>
+                    </div>
+                  </div>
+                  <div className="todo-actions">
+                    <button type="button" onClick={() => startEditingTodo(todo)}>
+                      Edit
+                    </button>
+                    <button type="button" onClick={() => handleDeleteTodo(todo.id)}>
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
             </article>
           ))}
 
