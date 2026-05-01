@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
-import { pathToFileURL } from "node:url";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createDatabase, type DatabaseConnection } from "./db.js";
 import {
   createList,
@@ -15,6 +16,9 @@ import {
 
 export function createApp(database: DatabaseConnection) {
   const app = express();
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const clientDistPath = path.resolve(__dirname, "../../client/dist");
 
   app.use(cors());
   app.use(express.json());
@@ -93,6 +97,21 @@ export function createApp(database: DatabaseConnection) {
     }
 
     response.json({ success: true });
+  });
+
+  app.use(express.static(clientDistPath));
+
+  app.get("/{*path}", (request, response, next) => {
+    if (request.path.startsWith("/api")) {
+      next();
+      return;
+    }
+
+    response.sendFile(path.join(clientDistPath, "index.html"), (error) => {
+      if (error) {
+        next();
+      }
+    });
   });
 
   app.use(
