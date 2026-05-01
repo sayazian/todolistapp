@@ -68,8 +68,19 @@ export default function App() {
   const [editingListName, setEditingListName] = useState("");
   const [editingTodo, setEditingTodo] = useState<TodoEditState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingTodos, setLoadingTodos] = useState(false);
+  const [savingList, setSavingList] = useState(false);
   const [savingTodo, setSavingTodo] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [listValidationMessage, setListValidationMessage] = useState<string | null>(
+    null
+  );
+  const [todoValidationMessage, setTodoValidationMessage] = useState<string | null>(
+    null
+  );
+  const [editValidationMessage, setEditValidationMessage] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     void loadLists();
@@ -114,11 +125,14 @@ export default function App() {
 
   async function loadTodos(listId: number) {
     try {
+      setLoadingTodos(true);
       const data = await request<Todo[]>(`/api/lists/${listId}/todos`);
       setTodos(data);
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(getMessage(error));
+    } finally {
+      setLoadingTodos(false);
     }
   }
 
@@ -126,20 +140,25 @@ export default function App() {
     event.preventDefault();
 
     if (!newListName.trim()) {
+      setListValidationMessage("List name is required.");
       return;
     }
 
     try {
+      setSavingList(true);
       const created = await request<TodoList>("/api/lists", {
         method: "POST",
         body: JSON.stringify({ name: newListName.trim() })
       });
       setLists((current) => [...current, created]);
       setNewListName("");
+      setListValidationMessage(null);
       setSelectedListId(created.id);
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(getMessage(error));
+    } finally {
+      setSavingList(false);
     }
   }
 
@@ -154,6 +173,7 @@ export default function App() {
     const nextName = editingListName.trim();
 
     if (!nextName) {
+      setListValidationMessage("List name is required.");
       return;
     }
 
@@ -167,6 +187,7 @@ export default function App() {
       );
       setEditingListId(null);
       setEditingListName("");
+      setListValidationMessage(null);
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(getMessage(error));
@@ -202,6 +223,7 @@ export default function App() {
     event.preventDefault();
 
     if (selectedListId === null || !draft.title.trim()) {
+      setTodoValidationMessage("Todo title is required.");
       return;
     }
 
@@ -218,6 +240,7 @@ export default function App() {
       });
       setTodos((current) => [created, ...current]);
       setDraft(emptyDraft);
+      setTodoValidationMessage(null);
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(getMessage(error));
@@ -269,6 +292,7 @@ export default function App() {
     event.preventDefault();
 
     if (!editingTodo || !editingTodo.title.trim()) {
+      setEditValidationMessage("Todo title is required.");
       return;
     }
 
@@ -285,6 +309,7 @@ export default function App() {
         current.map((item) => (item.id === updated.id ? updated : item))
       );
       setEditingTodo(null);
+      setEditValidationMessage(null);
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(getMessage(error));
@@ -307,11 +332,21 @@ export default function App() {
             <span>New list</span>
             <input
               value={newListName}
-              onChange={(event) => setNewListName(event.target.value)}
+              onChange={(event) => {
+                setNewListName(event.target.value);
+                if (listValidationMessage) {
+                  setListValidationMessage(null);
+                }
+              }}
               placeholder="Weekend errands"
             />
           </label>
-          <button type="submit">Create list</button>
+          {listValidationMessage ? (
+            <p className="validation-message">{listValidationMessage}</p>
+          ) : null}
+          <button type="submit" disabled={savingList}>
+            {savingList ? "Creating..." : "Create list"}
+          </button>
         </form>
 
         <div className="list-panel">
@@ -329,10 +364,18 @@ export default function App() {
                     <span>List name</span>
                     <input
                       value={editingListName}
-                      onChange={(event) => setEditingListName(event.target.value)}
+                      onChange={(event) => {
+                        setEditingListName(event.target.value);
+                        if (listValidationMessage) {
+                          setListValidationMessage(null);
+                        }
+                      }}
                       autoFocus
                     />
                   </label>
+                  {listValidationMessage ? (
+                    <p className="validation-message">{listValidationMessage}</p>
+                  ) : null}
                   <div className="inline-actions">
                     <button type="submit">Save</button>
                     <button
@@ -407,9 +450,12 @@ export default function App() {
             <span>Title</span>
             <input
               value={draft.title}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, title: event.target.value }))
-              }
+              onChange={(event) => {
+                setDraft((current) => ({ ...current, title: event.target.value }));
+                if (todoValidationMessage) {
+                  setTodoValidationMessage(null);
+                }
+              }}
               placeholder="Prepare architecture notes"
               disabled={selectedListId === null}
             />
@@ -437,12 +483,18 @@ export default function App() {
               rows={3}
             />
           </label>
+          {todoValidationMessage ? (
+            <p className="validation-message field-wide">{todoValidationMessage}</p>
+          ) : null}
           <button type="submit" disabled={selectedListId === null || savingTodo}>
             {savingTodo ? "Saving..." : "Add todo"}
           </button>
         </form>
 
         <section className="todo-list">
+          {loadingTodos ? (
+            <p className="empty-message">Loading todos...</p>
+          ) : null}
           {visibleTodos.map((todo) => (
             <article key={todo.id} className="todo-card">
               {editingTodo?.id === todo.id ? (
@@ -451,11 +503,14 @@ export default function App() {
                     <span>Title</span>
                     <input
                       value={editingTodo.title}
-                      onChange={(event) =>
+                      onChange={(event) => {
                         setEditingTodo((current) =>
                           current ? { ...current, title: event.target.value } : current
-                        )
-                      }
+                        );
+                        if (editValidationMessage) {
+                          setEditValidationMessage(null);
+                        }
+                      }}
                       autoFocus
                     />
                   </label>
@@ -483,6 +538,11 @@ export default function App() {
                       }
                     />
                   </label>
+                  {editValidationMessage ? (
+                    <p className="validation-message field-wide">
+                      {editValidationMessage}
+                    </p>
+                  ) : null}
                   <div className="inline-actions">
                     <button type="submit">Save changes</button>
                     <button
@@ -525,7 +585,10 @@ export default function App() {
             </article>
           ))}
 
-          {!loading && selectedListId !== null && visibleTodos.length === 0 ? (
+          {!loading &&
+          !loadingTodos &&
+          selectedListId !== null &&
+          visibleTodos.length === 0 ? (
             <p className="empty-message">No todos match the current filter.</p>
           ) : null}
         </section>

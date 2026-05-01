@@ -83,3 +83,26 @@ test("invalid due date is rejected", () => {
     fs.rmSync(tempDirectory, { recursive: true, force: true });
   }
 });
+
+test("deleting a list also removes its todos", () => {
+  const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "todo-server-test-"));
+  const database = createDatabase(path.join(tempDirectory, "test.sqlite"));
+
+  try {
+    const list = createList(database, "Cascade test");
+    const todo = createTodo(database, {
+      listId: list.id,
+      title: "Should disappear with parent list"
+    });
+
+    assert.ok(todo);
+    assert.equal(listTodosForList(database, list.id)?.length, 1);
+
+    assert.equal(deleteList(database, list.id), true);
+    assert.equal(listTodosForList(database, list.id), null);
+    assert.equal(deleteTodo(database, todo.id), false);
+  } finally {
+    database.close();
+    fs.rmSync(tempDirectory, { recursive: true, force: true });
+  }
+});

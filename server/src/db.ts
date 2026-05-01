@@ -42,7 +42,15 @@ export function initializeSchema(database: DatabaseConnection) {
 }
 
 export function getDefaultDatabasePath() {
-  return process.env.DB_PATH ?? path.join(defaultDataDirectory, "todolist.sqlite");
+  if (process.env.DB_PATH) {
+    return process.env.DB_PATH;
+  }
+
+  if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+    return path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, "todolist.sqlite");
+  }
+
+  return path.join(defaultDataDirectory, "todolist.sqlite");
 }
 
 function ensureParentDirectory(filename: string) {

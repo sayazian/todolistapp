@@ -209,6 +209,12 @@ button {
   color: #4d6265;
 }
 
+.validation-message {
+  margin: 0;
+  color: #8b2f1d;
+  font-size: 0.92rem;
+}
+
 .edit-form {
   display: grid;
   gap: 12px;
