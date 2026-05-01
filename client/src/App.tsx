@@ -480,7 +480,8 @@ export default function App() {
               }
               placeholder="Plain text only in v1."
               disabled={selectedListId === null}
-              rows={3}
+              rows={1}
+              className="compact-textarea"
             />
           </label>
           {todoValidationMessage ? (

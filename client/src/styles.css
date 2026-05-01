@@ -169,6 +169,11 @@ textarea {
   box-shadow: 0 0 0 3px rgba(28, 107, 115, 0.12);
 }
 
+.compact-textarea {
+  min-height: 42px;
+  resize: none;
+}
+
 .list-panel {
   display: grid;
   gap: 8px;
@@ -285,7 +290,7 @@ textarea {
 
 .todo-form {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(160px, 0.6fr) minmax(0, 1fr) auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
   gap: 12px;
   align-items: end;
   padding: 14px 16px;
@@ -398,7 +403,7 @@ textarea {
 
 .edit-form {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(160px, 0.55fr) minmax(0, 1fr) auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
   gap: 12px;
   align-items: end;
   width: 100%;
