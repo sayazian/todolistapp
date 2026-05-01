@@ -319,15 +319,15 @@ export default function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div>
+        <div className="sidebar-intro">
           <p className="eyebrow">To Do List App</p>
           <h1>Lists</h1>
           <p className="muted">
-            This first version keeps the state flow visible on purpose.
+            Compact planning for lists, due dates, and quick note capture.
           </p>
         </div>
 
-        <form className="stack" onSubmit={handleCreateList}>
+        <form className="stack panel-form" onSubmit={handleCreateList}>
           <label className="field">
             <span>New list</span>
             <input
@@ -344,7 +344,7 @@ export default function App() {
           {listValidationMessage ? (
             <p className="validation-message">{listValidationMessage}</p>
           ) : null}
-          <button type="submit" disabled={savingList}>
+          <button className="primary-button" type="submit" disabled={savingList}>
             {savingList ? "Creating..." : "Create list"}
           </button>
         </form>
@@ -377,7 +377,7 @@ export default function App() {
                     <p className="validation-message">{listValidationMessage}</p>
                   ) : null}
                   <div className="inline-actions">
-                    <button type="submit">Save</button>
+                    <button className="primary-button" type="submit">Save</button>
                     <button
                       type="button"
                       className="ghost-button"
@@ -391,7 +391,7 @@ export default function App() {
                   </div>
                 </form>
               ) : (
-                <>
+                <div className="list-row">
                   <button
                     type="button"
                     className="list-select"
@@ -407,7 +407,7 @@ export default function App() {
                       Delete
                     </button>
                   </div>
-                </>
+                </div>
               )}
             </div>
           ))}
@@ -420,7 +420,7 @@ export default function App() {
 
       <main className="content">
         <div className="content-header">
-          <div>
+          <div className="header-copy">
             <p className="eyebrow">Current list</p>
             <h2>
               {selectedListId === null
@@ -429,7 +429,7 @@ export default function App() {
             </h2>
           </div>
 
-          <div className="filter-row">
+          <div className="filter-row" aria-label="Todo filters">
             {(["all", "active", "completed"] as TodoFilter[]).map((value) => (
               <button
                 key={value}
@@ -486,7 +486,11 @@ export default function App() {
           {todoValidationMessage ? (
             <p className="validation-message field-wide">{todoValidationMessage}</p>
           ) : null}
-          <button type="submit" disabled={selectedListId === null || savingTodo}>
+          <button
+            className="primary-button"
+            type="submit"
+            disabled={selectedListId === null || savingTodo}
+          >
             {savingTodo ? "Saving..." : "Add todo"}
           </button>
         </form>
@@ -544,7 +548,9 @@ export default function App() {
                     </p>
                   ) : null}
                   <div className="inline-actions">
-                    <button type="submit">Save changes</button>
+                    <button className="primary-button" type="submit">
+                      Save changes
+                    </button>
                     <button
                       type="button"
                       className="ghost-button"
@@ -557,19 +563,25 @@ export default function App() {
               ) : (
                 <>
                   <div className="todo-main">
-                    <label className="todo-title-row">
-                      <input
-                        type="checkbox"
-                        checked={todo.completed}
-                        onChange={() => handleToggleTodo(todo)}
-                      />
-                      <span className={todo.completed ? "todo-title done" : "todo-title"}>
-                        {todo.title}
-                      </span>
-                    </label>
-                    <div className="todo-meta">
-                      <span>{todo.dueDate ? `Due ${todo.dueDate}` : "No due date"}</span>
-                      <span>{todo.notes ? todo.notes : "No notes"}</span>
+                    <div className="todo-row">
+                      <label className="todo-title-row">
+                        <input
+                          type="checkbox"
+                          checked={todo.completed}
+                          onChange={() => handleToggleTodo(todo)}
+                        />
+                        <span className={todo.completed ? "todo-title done" : "todo-title"}>
+                          {todo.title}
+                        </span>
+                      </label>
+                      <div className="todo-meta">
+                        <span className="meta-pill">
+                          {todo.dueDate ? `Due ${todo.dueDate}` : "No due date"}
+                        </span>
+                        <span className="notes-preview">
+                          {todo.notes ? todo.notes : "No notes"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="todo-actions">
